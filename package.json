@@ -1,6 +1,6 @@
 {
 	"name": "@substrate-system/slugify",
-	"version": "3.0.0",
+	"version": "3.0.1",
 	"description": "Slugify a string",
 	"type": "module",
 	"main": "./dist/index.js",
