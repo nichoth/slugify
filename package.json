@@ -3,9 +3,18 @@
 	"version": "3.0.0",
 	"description": "Slugify a string",
 	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"exports": {
-		"types": "./index.d.ts",
-		"default": "./index.js"
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./overridable-replacements": {
+			"types": "./dist/overridable-replacements.d.ts",
+			"default": "./dist/overridable-replacements.js"
+		},
+		"./package.json": "./package.json"
 	},
 	"sideEffects": false,
 	"engines": {
@@ -13,14 +22,29 @@
 	},
 	"scripts": {
 		"start": "vite",
+		"build": "mkdir -p ./dist && rm -rf ./dist/* && tsc --project tsconfig.build.json",
 		"build-example": "mkdir -p ./public && rm -rf ./public/* && vite --base=\"/slugify\" build",
-		"test": "xo && ava"
+		"test": "npm run build && xo && ava",
+		"prepublishOnly": "npm run build"
 	},
 	"files": [
-		"index.js",
-		"index.d.ts",
-		"overridable-replacements.js"
+		"./dist/*"
 	],
+	"dependencies": {
+		"@sindresorhus/transliterate": "^2.0.0",
+		"escape-string-regexp": "^5.0.0"
+	},
+	"devDependencies": {
+		"ava": "^6.4.1",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.6",
+		"xo": "^1.2.2"
+	},
+	"xo": {
+		"rules": {
+			"@typescript-eslint/member-ordering": "off"
+		}
+	},
 	"keywords": [
 		"string",
 		"slugify",
@@ -40,23 +64,15 @@
 		"filename",
 		"id"
 	],
-	"dependencies": {
-		"@sindresorhus/transliterate": "^2.0.0",
-		"escape-string-regexp": "^5.0.0"
-	},
-	"devDependencies": {
-		"ava": "^6.4.1",
-		"typescript": "^5.9.3",
-		"vite": "^7.3.6",
-		"xo": "^1.2.2"
-	},
-	"xo": {
-		"rules": {
-			"@typescript-eslint/member-ordering": "off"
-		}
-	},
 	"license": "MIT",
-	"repository": "sindresorhus/slugify",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/nichoth/slugify.git"
+	},
+	"bugs": {
+		"url": "https://github.com/nichoth/slugify/issues"
+	},
+	"homepage": "https://github.com/nichoth/slugify",
 	"funding": "https://github.com/sponsors/sindresorhus",
 	"author": {
 		"name": "Sindre Sorhus",

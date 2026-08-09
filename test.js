@@ -1,5 +1,5 @@
 import test from 'ava';
-import slugify, {slugifyWithCounter} from './index.js';
+import slugify, {slugifyWithCounter} from './dist/index.js';
 
 test('main', t => {
 	t.is(slugify('Foo Bar'), 'foo-bar');

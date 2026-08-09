@@ -1,4 +1,4 @@
-import slugify from '../index.js';
+import slugify from '../src/index.js';
 import './style.css';
 
 const input = document.querySelector<HTMLInputElement>('#text-input')!;

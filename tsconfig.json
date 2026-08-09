@@ -13,10 +13,12 @@
 		"sourceMap": true,
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
-		"isolatedModules": true
+		"isolatedModules": true,
+		"declaration": true,
+		"declarationMap": true
 	},
 	"include": [
 		"example",
-		"index.d.ts"
+		"src"
 	]
 }

@@ -1,4 +1,4 @@
-const overridableReplacements = [
+export const overridableReplacements: Array<[string, string]> = [
 	['&', ' and '],
 	['🦄', ' unicorn '],
 	['♥', ' love '],
