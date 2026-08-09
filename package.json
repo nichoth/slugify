@@ -22,10 +22,16 @@
 	},
 	"scripts": {
 		"start": "vite",
-		"build": "mkdir -p ./dist && rm -rf ./dist/* && tsc --project tsconfig.build.json",
+		"build-esm": "esbuild src/*.ts --format=esm --metafile=dist/meta.json --keep-names --tsconfig=tsconfig.build.json --outdir=./dist --sourcemap && tsc --emitDeclarationOnly --project tsconfig.build.json --outDir dist",
+		"build-esm:min": "esbuild ./src/*.ts --format=esm --keep-names --bundle --tsconfig=tsconfig.build.json --minify --out-extension:.js=.min.js --outdir=./dist --sourcemap",
+		"build": "mkdir -p ./dist && rm -rf ./dist/* && npm run build-esm && npm run build-esm:min",
 		"build-example": "mkdir -p ./public && rm -rf ./public/* && vite --base=\"/slugify\" build",
 		"test": "npm run build && xo && ava",
-		"prepublishOnly": "npm run build"
+		"toc": "markdown-toc --maxdepth 3 -i README.md",
+		"prepublishOnly": "npm run build",
+		"preversion": "npm run lint",
+		"version": "npm run toc && auto-changelog -p --template keepachangelog --breaking-pattern 'BREAKING CHANGE:' && git add CHANGELOG.md README.md",
+		"postversion": "git push --follow-tags && npm publish"
 	},
 	"files": [
 		"./dist/*"
@@ -35,7 +41,10 @@
 		"escape-string-regexp": "^5.0.0"
 	},
 	"devDependencies": {
+		"auto-changelog": "^2.6.0",
 		"ava": "^6.4.1",
+		"esbuild": "^0.28.2",
+		"markdown-toc": "^1.2.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.6",
 		"xo": "^1.2.2"
