@@ -1,21 +1,29 @@
 # slugify
 
-> Slugify a string
+Slugify a string. Useful for URLs, filenames, and IDs.
 
-Useful for URLs, filenames, and IDs.
+It handles most major languages, including
+[German (umlauts)](https://en.wikipedia.org/wiki/Germanic_umlaut),
+Vietnamese, Arabic, Russian,
+[and more](https://github.com/sindresorhus/transliterate#supported-languages).
 
-It handles most major languages, including [German (umlauts)](https://en.wikipedia.org/wiki/Germanic_umlaut), Vietnamese, Arabic, Russian, [and more](https://github.com/sindresorhus/transliterate#supported-languages).
+## Demo
+
+Try it in the browser:
+[nichoth.github.io/slugify](https://nichoth.github.io/slugify/)
+
+Run it locally with `npm start`.
 
 ## Install
 
 ```sh
-npm install @sindresorhus/slugify
+npm install @substrate-system/slugify
 ```
 
 ## Usage
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('I ♥ Dogs');
 //=> 'i-love-dogs'
@@ -50,7 +58,7 @@ Type: `string`\
 Default: `'-'`
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('BAR and baz');
 //=> 'bar-and-baz'
@@ -70,7 +78,7 @@ Default: `true`
 Make the slug lowercase.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('Déjà Vu!');
 //=> 'deja-vu'
@@ -87,7 +95,7 @@ Default: `true`
 Convert camelcase to separate words. Internally it does `fooBar` → `foo bar`.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('fooBar');
 //=> 'foo-bar'
@@ -112,7 +120,7 @@ The replacements are run on the original string before any other transformations
 This only overrides a default replacement if you set an item with the same key, like `&`.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('Foo@unicorn', {
 	customReplacements: [
@@ -125,7 +133,7 @@ slugify('Foo@unicorn', {
 Add a leading and trailing space to the replacement to have it separated by dashes:
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('foo@unicorn', {
 	customReplacements: [
@@ -138,7 +146,7 @@ slugify('foo@unicorn', {
 Another example:
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('I love 🐶', {
 	customReplacements: [
@@ -158,7 +166,7 @@ If your string starts with an underscore, it will be preserved in the slugified 
 Sometimes leading underscores are intentional, for example, filenames representing hidden paths on a website.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('_foo_bar');
 //=> 'foo-bar'
@@ -177,7 +185,7 @@ If your string ends with a dash, it will be preserved in the slugified string.
 For example, using slugify on an input field would allow for validation while not preventing the user from writing a slug.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('foo-bar-');
 //=> 'foo-bar'
@@ -198,7 +206,7 @@ It cannot contain the `separator`.
 For example, if you want to slugify URLs, but preserve the HTML fragment `#` character.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('foo_bar#baz', {preserveCharacters: ['#']});
 //=> 'foo-bar#baz'
@@ -214,7 +222,7 @@ The locale to use for language-specific transliteration.
 See the [`@sindresorhus/transliterate` package](https://github.com/sindresorhus/transliterate#locale) for more info.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('Räksmörgås');
 //=> 'raeksmoergas'
@@ -233,7 +241,7 @@ Whether to transliterate Unicode characters to ASCII.
 When `false`, non-ASCII characters will be preserved instead of being transliterated. This can improve performance when you don't need transliteration.
 
 ```js
-import slugify from '@sindresorhus/slugify';
+import slugify from '@substrate-system/slugify';
 
 slugify('Déjà Vu');
 //=> 'deja-vu'
@@ -249,7 +257,7 @@ Returns a new instance of `slugify(string, options?)` with a counter to handle m
 #### Example
 
 ```js
-import {slugifyWithCounter} from '@sindresorhus/slugify';
+import {slugifyWithCounter} from '@substrate-system/slugify';
 
 const slugify = slugifyWithCounter();
 
@@ -288,7 +296,7 @@ Reset the counter
 #### Example
 
 ```js
-import {slugifyWithCounter} from '@sindresorhus/slugify';
+import {slugifyWithCounter} from '@substrate-system/slugify';
 
 const slugify = slugifyWithCounter();
 

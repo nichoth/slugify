@@ -1,15 +1,7 @@
 {
-	"name": "@sindresorhus/slugify",
+	"name": "@substrate-system/slugify",
 	"version": "3.0.0",
 	"description": "Slugify a string",
-	"license": "MIT",
-	"repository": "sindresorhus/slugify",
-	"funding": "https://github.com/sponsors/sindresorhus",
-	"author": {
-		"name": "Sindre Sorhus",
-		"email": "sindresorhus@gmail.com",
-		"url": "https://sindresorhus.com"
-	},
 	"type": "module",
 	"exports": {
 		"types": "./index.d.ts",
@@ -20,6 +12,8 @@
 		"node": ">=20"
 	},
 	"scripts": {
+		"start": "vite",
+		"build-example": "mkdir -p ./public && rm -rf ./public/* && vite --base=\"/slugify\" build",
 		"test": "xo && ava"
 	},
 	"files": [
@@ -52,11 +46,21 @@
 	},
 	"devDependencies": {
 		"ava": "^6.4.1",
+		"typescript": "^5.9.3",
+		"vite": "^7.3.6",
 		"xo": "^1.2.2"
 	},
 	"xo": {
 		"rules": {
 			"@typescript-eslint/member-ordering": "off"
 		}
+	},
+	"license": "MIT",
+	"repository": "sindresorhus/slugify",
+	"funding": "https://github.com/sponsors/sindresorhus",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "https://sindresorhus.com"
 	}
 }

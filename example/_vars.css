@@ -1,0 +1,25 @@
+:root {
+    --bg: #fbfaf8;
+    --surface: #ffffff;
+    --text: #1c1b1a;
+    --text-dim: #6b6763;
+    --border: #ddd8d1;
+    --accent: #2b6cb0;
+
+    --radius: 6px;
+    --gap: 1rem;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial,
+        sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #17161a;
+        --surface: #201f24;
+        --text: #eceaea;
+        --text-dim: #9b9691;
+        --border: #38353c;
+        --accent: #7cb0e8;
+    }
+}
