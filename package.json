@@ -18,7 +18,7 @@
 	},
 	"sideEffects": false,
 	"engines": {
-		"node": ">=20"
+		"node": ">=22"
 	},
 	"scripts": {
 		"lint": "xo",
@@ -27,7 +27,7 @@
 		"build-esm:min": "esbuild ./src/*.ts --format=esm --keep-names --bundle --tsconfig=tsconfig.build.json --minify --out-extension:.js=.min.js --outdir=./dist --sourcemap",
 		"build": "mkdir -p ./dist && rm -rf ./dist/* && npm run build-esm && npm run build-esm:min",
 		"build-example": "mkdir -p ./public && rm -rf ./public/* && vite --base=\"/slugify\" build",
-		"test": "npm run build && xo && ava",
+		"test": "npm run build && esbuild ./test/index.ts --bundle | node --input-type module | tap-spec",
 		"toc": "markdown-toc --maxdepth 3 -i README.md",
 		"prepublishOnly": "npm run build",
 		"preversion": "npm run lint",
@@ -38,14 +38,15 @@
 		"./dist/*"
 	],
 	"dependencies": {
-		"@sindresorhus/transliterate": "^2.0.0",
+		"@sindresorhus/transliterate": "^3.0.0",
 		"escape-string-regexp": "^5.0.0"
 	},
 	"devDependencies": {
+		"@substrate-system/tapzero": "^0.10.17",
 		"auto-changelog": "^2.6.0",
-		"ava": "^6.4.1",
 		"esbuild": "^0.28.2",
 		"markdown-toc": "^1.2.0",
+		"tap-spec": "^5.0.0",
 		"typescript": "^5.9.3",
 		"vite": "^7.3.6",
 		"xo": "^1.2.2"
@@ -74,14 +75,6 @@
 		"filename",
 		"id"
 	],
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/nichoth/slugify.git"
-	},
-	"bugs": {
-		"url": "https://github.com/nichoth/slugify/issues"
-	},
 	"homepage": "https://github.com/nichoth/slugify",
 	"funding": "https://github.com/sponsors/sindresorhus",
 	"author": {

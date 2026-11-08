@@ -4,21 +4,21 @@ import builtinOverridableReplacements from './overridable-replacements.js';
 
 export type Options = {
 	/**
-	@default '-'
+		@default '-'
 
-	@example
-	```
-	import slugify from '@substrate-system/slugify';
+		@example
+		```
+		import slugify from '@substrate-system/slugify';
 
-	slugify('BAR and baz');
-	//=> 'bar-and-baz'
+		slugify('BAR and baz');
+		//=> 'bar-and-baz'
 
-	slugify('BAR and baz', {separator: '_'});
-	//=> 'bar_and_baz'
+		slugify('BAR and baz', {separator: '_'});
+		//=> 'bar_and_baz'
 
-	slugify('BAR and baz', {separator: ''});
-	//=> 'barandbaz'
-	```
+		slugify('BAR and baz', {separator: ''});
+		//=> 'barandbaz'
+		```
 	*/
 	readonly separator?: string;
 
@@ -237,55 +237,130 @@ const defaultOptions: ResolvedOptions = {
 	transliterate: true,
 };
 
+// Separate capitalized words. Each pattern captures the least leading
+// context it needs, as a greedy quantifier there causes quadratic
+// backtracking on long runs of the same character class.
 const decamelize = (string: string): string => string
-	// Separate capitalized words.
-	.replaceAll(/([A-Z]{2,})(\d+)/g, '$1 $2')
-	.replaceAll(/([a-z\d]+)([A-Z]{2,})/g, '$1 $2')
-
-	.replaceAll(/([a-z\d])([A-Z])/g, '$1 $2')
-	// `[a-rt-z]` matches all lowercase characters except `s`.
-	// This avoids matching plural acronyms like `APIs`.
-	.replaceAll(/([A-Z]+)([A-Z][a-rt-z\d]+)/g, '$1 $2');
+	// `FOO360` -> `FOO 360`
+	.replaceAll(
+		/(?<acronym>[A-Z]{2})(?<digits>\d+)/g,
+		'$<acronym> $<digits>',
+	)
+	// `foo360BAR` -> `foo360 BAR`, `fooBar` -> `foo Bar`
+	.replaceAll(
+		/(?<word>[\da-z])(?<uppercase>[A-Z])/g,
+		'$<word> $<uppercase>',
+	)
+	// `APISection` -> `API Section`. A lowercase `s` right after the
+	// acronym is a plural marker rather than the start of a new word,
+	// unless another lowercase letter follows it, so `APIs` is left alone
+	// while `APIUsage` is still separated.
+	.replaceAll(
+		/(?<acronymHead>[A-Z])(?<rest>[A-Z](?!s(?![a-z]))[\da-z]+)/g,
+		'$<acronymHead> $<rest>',
+	);
 
 const removeMootSeparators = (string: string, separator: string): string => {
 	const escapedSeparator = escapeStringRegexp(separator);
+	const repeated = new RegExp(`(?:${escapedSeparator}){2,}`, 'g');
+	const edges = new RegExp(
+		`^(?:${escapedSeparator})|(?:${escapedSeparator})$`,
+		'g',
+	);
 
+	// The replacement is a function so a separator containing `$` is
+	// inserted literally instead of being read as a replacement pattern.
 	return string
-		.replaceAll(new RegExp(`(?:${escapedSeparator}){2,}`, 'g'), separator)
-		.replaceAll(new RegExp(`^(?:${escapedSeparator})|(?:${escapedSeparator})$`, 'g'), '');
+		.replaceAll(repeated, () => separator)
+		.replaceAll(edges, '');
+};
+
+// Strip the trailing counter groups from a slug, so `foo-1-2` becomes
+// `foo`. This is done with a split rather than a `(?:-\d+)+$` regex, as
+// that pattern is unanchored and so retries at every `-` in the string,
+// which is quadratic on input such as `-1-1-1...-1a`.
+const removeCounterSuffix = (string: string): string => {
+	const parts = string.split('-');
+
+	while (parts.length > 1 && /^\d+$/.test(parts.at(-1) ?? '')) {
+		parts.pop();
+	}
+
+	return parts.join('-');
 };
 
 const buildPatternSlug = (options: ResolvedOptions): RegExp => {
 	let negationSetPattern = String.raw`a-z\d`;
 	negationSetPattern += options.lowercase ? '' : 'A-Z';
 
-	// When transliteration is disabled, preserve Unicode characters
+	// When transliteration is disabled, preserve Unicode characters,
+	// including combining marks
 	if (!options.transliterate) {
-		negationSetPattern += String.raw`\p{L}\p{N}`;
+		negationSetPattern += String.raw`\p{L}\p{M}\p{N}`;
 	}
 
-	if (options.preserveCharacters.length > 0) {
-		for (const character of options.preserveCharacters) {
-			if (character === options.separator) {
-				throw new Error(`The separator character \`${options.separator}\` cannot be included in preserved characters: ${options.preserveCharacters.join(',')}`);
-			}
-
-			negationSetPattern += escapeStringRegexp(character);
+	for (const character of options.preserveCharacters) {
+		if (character === options.separator) {
+			throw new Error(`The separator character \`${options.separator}\` cannot be included in preserved characters: ${options.preserveCharacters.join(',')}`);
 		}
+
+		negationSetPattern += escapeStringRegexp(character);
 	}
 
+	// Not `v`, as `escapeStringRegexp` does not escape characters that a
+	// `v`-mode character class requires escaped, like `/` and `&&`. The
+	// `u` flag is enough for `\p{...}`.
 	const flags = options.transliterate ? 'g' : 'gu';
-	return new RegExp(`[^${negationSetPattern}]+`, flags);
+	// Discard combining marks with a removed character so emoji do not
+	// leave orphaned variation selectors.
+	const combiningMarks = options.transliterate ? '' : String.raw`\p{M}*`;
+	return new RegExp(
+		`(?:[^${negationSetPattern}]${combiningMarks})+`,
+		flags,
+	);
 };
+
+// The locale is only used without transliteration, as a transliterated
+// string is ASCII and locale-aware lowercasing could make it non-ASCII
+// again, like `I` to `ı` for Turkish.
+const toLowerCase = (string: string, options: ResolvedOptions): string => {
+	if (!options.locale || options.transliterate) {
+		return string.toLowerCase();
+	}
+
+	return string.toLocaleLowerCase(options.locale);
+};
+
+// Drop the apostrophe from contractions and possessives so that
+// `Conway's Law` becomes `conways-law` rather than `conway-s-law`. Only a
+// word-final `'t` or `'s` qualifies, so `foo'sbar` is left alone, and both
+// straight and curly apostrophes are handled. What counts as a word
+// character has to be what survives into the slug, so it widens to Unicode
+// alongside `buildPatternSlug` when transliteration is disabled. The `i`
+// flag covers `DON'T` when the `lowercase` option is disabled.
+const contractionEnd = String.raw`['\u{2019}](?<ending>[st])`;
+const asciiContraction = new RegExp(
+	String.raw`(?<word>[\da-z])${contractionEnd}(?![\da-z])`,
+	'giu',
+);
+const unicodeWord = String.raw`[\p{Letter}\p{Mark}\p{Number}]`;
+const unicodeContraction = new RegExp(
+	`(?<word>${unicodeWord})${contractionEnd}(?!${unicodeWord})`,
+	'giu',
+);
 
 export default function slugify(string: string, options?: Options): string {
 	if (typeof string !== 'string') {
 		throw new TypeError(`Expected a string, got \`${typeof string}\``);
 	}
 
+	// An option set to `undefined` uses the default.
+	const definedOptions = Object.fromEntries(Object.entries(options ?? {})
+		.filter(([, value]) => value !== undefined)) as Options;
+
 	const resolvedOptions: ResolvedOptions = {
 		...defaultOptions,
-		...options,
+		...definedOptions,
 	};
 
 	const shouldPrependUnderscore = resolvedOptions.preserveLeadingUnderscore && string.startsWith('_');
@@ -298,9 +373,14 @@ export default function slugify(string: string, options?: Options): string {
 		]);
 
 		string = transliterate(string, {customReplacements, locale: resolvedOptions.locale});
-	} else if (resolvedOptions.customReplacements.length > 0) {
+	} else {
 		// Apply custom replacements even when transliteration is disabled
 		for (const [key, value] of resolvedOptions.customReplacements) {
+			// A replacement value keeps `replaceAll`'s replacement-pattern
+			// semantics here, so that this branch agrees with the
+			// transliterating one, where `@sindresorhus/transliterate`
+			// applies the same replacements the same way. Escaping `$`
+			// would make the two branches disagree.
 			string = string.replaceAll(key, value);
 		}
 	}
@@ -312,15 +392,17 @@ export default function slugify(string: string, options?: Options): string {
 	const patternSlug = buildPatternSlug(resolvedOptions);
 
 	if (resolvedOptions.lowercase) {
-		string = resolvedOptions.locale ? string.toLocaleLowerCase(resolvedOptions.locale) : string.toLowerCase();
+		string = toLowerCase(string, resolvedOptions);
 	}
 
-	// Detect contractions/possessives by looking for any word followed by a `'t` or `'s`
-	// in isolation and then remove it. Handles both straight and curly apostrophes.
-	string = string.replaceAll(/([a-zA-Z\d]+)['’]([ts])(\s|$)/g, '$1$2$3');
+	string = string.replaceAll(
+		resolvedOptions.transliterate ? asciiContraction : unicodeContraction,
+		'$<word>$<ending>',
+	);
 
-	string = string.replace(patternSlug, resolvedOptions.separator);
-	string = string.replaceAll('\\', '');
+	// The replacement is a function so a separator containing `$` is
+	// inserted literally instead of being read as a replacement pattern.
+	string = string.replace(patternSlug, () => resolvedOptions.separator);
 
 	if (resolvedOptions.separator) {
 		string = removeMootSeparators(string, resolvedOptions.separator);
@@ -331,7 +413,7 @@ export default function slugify(string: string, options?: Options): string {
 	}
 
 	if (shouldAppendDash) {
-		string = `${string}-`;
+		string += '-';
 	}
 
 	return string;
@@ -372,6 +454,7 @@ export type CountableSlugify = {
 
 export function slugifyWithCounter(): CountableSlugify {
 	const occurrences = new Map<string, number>();
+	const returned = new Set<string>();
 
 	const countable = (string: string, options?: Options): string => {
 		string = slugify(string, options);
@@ -381,19 +464,34 @@ export function slugifyWithCounter(): CountableSlugify {
 		}
 
 		const stringLower = string.toLowerCase();
-		const numberless = occurrences.get(stringLower.replace(/(?:-\d+?)+?$/, '')) ?? 0;
+		const base = removeCounterSuffix(stringLower);
+		const numberless = occurrences.get(base) ?? 0;
 		const counter = occurrences.get(stringLower);
-		occurrences.set(stringLower, typeof counter === 'number' ? counter + 1 : 1);
-		const newCounter = occurrences.get(stringLower) ?? 2;
-		if (newCounter >= 2 || numberless > 2) {
-			string = `${string}-${newCounter}`;
+		const nextCount = typeof counter === 'number' ? counter + 1 : 1;
+		occurrences.set(stringLower, nextCount);
+		let newCounter = occurrences.get(stringLower) ?? 2;
+		const needsCounter = newCounter >= 2 || numberless > 2;
+		let result = needsCounter ? `${string}-${newCounter}` : string;
+
+		// The counter is keyed on the incoming slug, so it cannot see a
+		// slug that was previously handed out by appending a counter to a
+		// *different* input. Without this loop, `foo`, `foo`, `foo 2` would
+		// return `foo-2` twice. Keep bumping the counter until the result is
+		// one that has not been returned before.
+		while (returned.has(result.toLowerCase())) {
+			newCounter += 1;
+			occurrences.set(stringLower, newCounter);
+			result = `${string}-${newCounter}`;
 		}
 
-		return string;
+		returned.add(result.toLowerCase());
+
+		return result;
 	};
 
 	countable.reset = () => {
 		occurrences.clear();
+		returned.clear();
 	};
 
 	return countable;
